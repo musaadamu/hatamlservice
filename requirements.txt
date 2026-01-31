@@ -1,0 +1,36 @@
+# HATA ML Service - Python Dependencies
+
+# Web Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
+
+# ML & NLP
+torch>=2.0.0
+transformers>=4.37.0
+sentencepiece>=0.1.99
+
+# Explainability
+lime>=0.2.0.1
+shap>=0.44.1
+
+# Data Processing
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.4.0
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Logging
+loguru>=0.7.2
+
+# HTTP Client
+httpx>=0.26.0
+aiohttp>=3.9.0
+
+# CORS
+fastapi-cors>=0.0.6
+
