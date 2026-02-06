@@ -5,7 +5,7 @@ ML Service Configuration
 import os
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
-from typing import List, Any
+from typing import List, Any, Optional
 
 
 class Settings(BaseSettings):
@@ -36,7 +36,7 @@ class Settings(BaseSettings):
 
     # Model Configuration
     MODEL_PATH: str = "../phdhatamodel"
-    MODEL_NAME: str = "devlan/afroberta-base"
+    MODEL_NAME: str = "msmaje/phdhatamodel"
     MODEL_SOURCE: str = "local"  # "local" or "hub"
     MAX_SEQUENCE_LENGTH: int = 512
     BATCH_SIZE: int = 16
