@@ -10,6 +10,7 @@ from typing import List, Optional
 from loguru import logger
 import sys
 import time
+import numpy as np
 
 from config import settings
 from services.model_service import model_service
@@ -64,6 +65,24 @@ class BatchPredictionRequest(BaseModel):
     languages: List[str]
     include_explanation: bool = False
     include_bias: bool = False
+
+
+def sanitize(obj):
+    if isinstance(obj, dict):
+        return {k: sanitize(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize(i) for i in obj]
+    elif isinstance(obj, bool):
+        return obj
+    elif isinstance(obj, (np.integer, int)):
+        return int(obj)
+    elif isinstance(obj, (np.floating, float)):
+        return float(obj)
+    elif isinstance(obj, (np.str_, str)):
+        return str(obj)
+    elif isinstance(obj, tuple):
+        return [sanitize(i) for i in obj]
+    return obj
 
 
 # Routes
@@ -134,16 +153,16 @@ async def predict(request: PredictionRequest):
         processing_time = time.time() - start_time
 
         response = {
-            "prediction": prediction_result["prediction"],
-            "explanation": explanation,
-            "biasScore": bias_score,
+            "prediction": sanitize(prediction_result["prediction"]),
+            "explanation": sanitize(explanation),
+            "biasScore": sanitize(bias_score),
             "language": request.language,
             "language_name": settings.LANGUAGE_NAMES[request.language],
             "processing_time": round(processing_time, 4)
         }
 
         logger.info(f"Prediction completed in {processing_time:.4f}s")
-        logger.info(f"Returning response: {response}")
+        logger.info(f"Returning sanitized response: {response}")
         return response
         
     except Exception as e:
@@ -170,7 +189,7 @@ async def batch_predict(request: BatchPredictionRequest):
             )
         
         results = model_service.batch_predict(request.texts, request.languages)
-        return {"results": results, "count": len(results)}
+        return {"results": sanitize(results), "count": len(results)}
         
     except Exception as e:
         logger.error(f"Batch prediction error: {e}")
