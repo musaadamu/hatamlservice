@@ -19,9 +19,17 @@ class ModelService:
         self.load_model()
     
     def load_model(self):
-        """Load the AfroXLMR model from phdhatamodel directory"""
+        """Load the model from local directory or HuggingFace Hub"""
         try:
-            logger.info(f"Loading model from {settings.MODEL_PATH}")
+            # Determine source
+            model_to_load = settings.MODEL_PATH
+            
+            # Check if we should use Hub or if local path is missing
+            if settings.MODEL_SOURCE == "hub" or not os.path.exists(settings.MODEL_PATH):
+                logger.info(f"Using HuggingFace Hub: {settings.MODEL_NAME}")
+                model_to_load = settings.MODEL_NAME
+            else:
+                logger.info(f"Loading local model from {settings.MODEL_PATH}")
             
             # Determine device
             if settings.DEVICE == "cuda" and torch.cuda.is_available():
@@ -32,12 +40,12 @@ class ModelService:
                 logger.info("Using CPU")
             
             # Load tokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(settings.MODEL_PATH)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_to_load)
             logger.info("Tokenizer loaded successfully")
             
             # Load model
             self.model = AutoModelForSequenceClassification.from_pretrained(
-                settings.MODEL_PATH
+                model_to_load
             )
             self.model.to(self.device)
             self.model.eval()

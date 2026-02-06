@@ -22,16 +22,17 @@ class Settings(BaseSettings):
     RELOAD: bool = True
     
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001"]
+    CORS_ORIGINS: List[str] = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,https://hatafrontend.vercel.app").split(",")
     
     # Model Configuration
-    MODEL_PATH: str = "../phdhatamodel"
-    MODEL_NAME: str = "msmaje/phdhatamodel"
+    MODEL_PATH: str = os.getenv("MODEL_PATH", "../phdhatamodel")
+    MODEL_NAME: str = os.getenv("MODEL_NAME", "msmaje/phdhatamodel")
+    MODEL_SOURCE: str = os.getenv("MODEL_SOURCE", "local")  # "local" or "hub"
     MAX_SEQUENCE_LENGTH: int = 512
     BATCH_SIZE: int = 16
     
     # Device Configuration
-    DEVICE: str = "cuda"  # or "cpu"
+    DEVICE: str = os.getenv("DEVICE", "cuda")  # or "cpu"
     
     # Supported Languages
     SUPPORTED_LANGUAGES: List[str] = ["ha", "yo", "ig", "pcm"]
@@ -51,15 +52,16 @@ class Settings(BaseSettings):
     }
     
     # Explainability
-    LIME_NUM_SAMPLES: int = 1000
-    LIME_NUM_FEATURES: int = 10
+    LIME_NUM_SAMPLES: int = int(os.getenv("LIME_NUM_SAMPLES", "1000"))
+    LIME_NUM_FEATURES: int = int(os.getenv("LIME_NUM_FEATURES", "10"))
     
     # Logging
-    LOG_LEVEL: str = "INFO"
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "allow"
 
 
 # Create settings instance
