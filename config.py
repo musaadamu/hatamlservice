@@ -23,14 +23,16 @@ class Settings(BaseSettings):
     RELOAD: bool = True
     
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001", "https://hatafrontend.vercel.app"]
+    CORS_ORIGINS: Any = ["http://localhost:3000", "http://localhost:3001", "https://hatafrontend.vercel.app"]
     
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: Any) -> List[str]:
         if isinstance(v, str):
             return [i.strip() for i in v.split(",")]
-        return v
+        elif isinstance(v, list):
+            return v
+        return [str(v)]
 
     # Model Configuration
     MODEL_PATH: str = "../phdhatamodel"
