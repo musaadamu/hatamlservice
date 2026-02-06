@@ -3,8 +3,9 @@ ML Service Configuration
 """
 
 import os
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Any
 
 
 class Settings(BaseSettings):
@@ -22,17 +23,24 @@ class Settings(BaseSettings):
     RELOAD: bool = True
     
     # CORS
-    CORS_ORIGINS: List[str] = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,https://hatafrontend.vercel.app").split(",")
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001", "https://hatafrontend.vercel.app"]
     
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Any) -> List[str]:
+        if isinstance(v, str):
+            return [i.strip() for i in v.split(",")]
+        return v
+
     # Model Configuration
-    MODEL_PATH: str = os.getenv("MODEL_PATH", "../phdhatamodel")
-    MODEL_NAME: str = os.getenv("MODEL_NAME", "msmaje/phdhatamodel")
-    MODEL_SOURCE: str = os.getenv("MODEL_SOURCE", "local")  # "local" or "hub"
+    MODEL_PATH: str = "../phdhatamodel"
+    MODEL_NAME: str = "msmaje/phdhatamodel"
+    MODEL_SOURCE: str = "local"  # "local" or "hub"
     MAX_SEQUENCE_LENGTH: int = 512
     BATCH_SIZE: int = 16
     
     # Device Configuration
-    DEVICE: str = os.getenv("DEVICE", "cuda")  # or "cpu"
+    DEVICE: str = "cuda"  # or "cpu"
     
     # Supported Languages
     SUPPORTED_LANGUAGES: List[str] = ["ha", "yo", "ig", "pcm"]
@@ -52,11 +60,11 @@ class Settings(BaseSettings):
     }
     
     # Explainability
-    LIME_NUM_SAMPLES: int = int(os.getenv("LIME_NUM_SAMPLES", "1000"))
-    LIME_NUM_FEATURES: int = int(os.getenv("LIME_NUM_FEATURES", "10"))
+    LIME_NUM_SAMPLES: int = 1000
+    LIME_NUM_FEATURES: int = 10
     
     # Logging
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    LOG_LEVEL: str = "INFO"
     
     class Config:
         env_file = ".env"
