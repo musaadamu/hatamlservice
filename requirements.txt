@@ -1,11 +1,10 @@
-# HATA ML Service - Python Dependencies
-
 # Web Framework
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 python-multipart>=0.0.6
 
-# ML & NLP
+# ML & NLP (CPU Optimized for Render Free/Starter Tier)
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch>=2.0.0
 transformers>=4.37.0
 datasets>=2.16.0
@@ -13,7 +12,6 @@ sentencepiece>=0.1.99
 
 # Explainability
 lime>=0.2.0.1
-shap>=0.44.1
 
 # Data Processing
 numpy>=1.24.0

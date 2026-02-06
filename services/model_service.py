@@ -40,12 +40,16 @@ class ModelService:
                 logger.info("Using CPU")
             
             # Load tokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(model_to_load)
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                model_to_load,
+                low_cpu_mem_usage=True
+            )
             logger.info("Tokenizer loaded successfully")
             
             # Load model
             self.model = AutoModelForSequenceClassification.from_pretrained(
-                model_to_load
+                model_to_load,
+                low_cpu_mem_usage=True
             )
             self.model.to(self.device)
             self.model.eval()
