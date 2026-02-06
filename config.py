@@ -36,7 +36,7 @@ class Settings(BaseSettings):
 
     # Model Configuration
     MODEL_PATH: str = "../phdhatamodel"
-    MODEL_NAME: str = "msmaje/phdhatamodel"
+    MODEL_NAME: str = "devlan/afroberta-base"
     MODEL_SOURCE: str = "local"  # "local" or "hub"
     MAX_SEQUENCE_LENGTH: int = 512
     BATCH_SIZE: int = 16
@@ -64,6 +64,9 @@ class Settings(BaseSettings):
     # Explainability
     LIME_NUM_SAMPLES: int = 1000
     LIME_NUM_FEATURES: int = 10
+    
+    # HF Hub
+    HF_TOKEN: Optional[str] = None
     
     # Logging
     LOG_LEVEL: str = "INFO"
