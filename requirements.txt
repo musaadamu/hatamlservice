@@ -9,6 +9,9 @@ torch>=2.0.0
 transformers>=4.37.0
 datasets>=2.16.0
 sentencepiece>=0.1.99
+safetensors>=0.4.0
+psutil>=5.9.0
+accelerate>=0.26.0
 
 # Explainability
 lime>=0.2.0.1

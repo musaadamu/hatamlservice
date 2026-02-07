@@ -19,7 +19,7 @@ from services.bias_service import BiasDetectionService
 
 # Configure logger
 logger.remove()
-logger.add(sys.stderr, level=settings.LOG_LEVEL)
+logger.add(sys.stdout, level=settings.LOG_LEVEL)
 logger.add("logs/ml_service.log", rotation="500 MB", level=settings.LOG_LEVEL)
 
 # Initialize FastAPI app

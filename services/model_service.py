@@ -42,12 +42,12 @@ class ModelService:
             # Load tokenizer
             self.tokenizer = AutoTokenizer.from_pretrained(
                 model_to_load,
-                low_cpu_mem_usage=True,
                 token=settings.HF_TOKEN
             )
             logger.info("Tokenizer loaded successfully")
             
             # Load model
+            logger.info(f"Loading weights from {model_to_load}... This may take a minute on CPU.")
             self.model = AutoModelForSequenceClassification.from_pretrained(
                 model_to_load,
                 low_cpu_mem_usage=True,
