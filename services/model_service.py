@@ -6,6 +6,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from loguru import logger
 import os
+import psutil
 from config import settings
 
 
@@ -22,14 +23,17 @@ class ModelService:
         """Load the model from local directory or HuggingFace Hub"""
         try:
             # Determine source
-            model_to_load = settings.MODEL_PATH
+            # Try absolute path relative to current working directory
+            local_path = os.path.abspath(settings.MODEL_PATH)
+            model_to_load = local_path
             
             # Check if we should use Hub or if local path is missing
-            if settings.MODEL_SOURCE == "hub" or not os.path.exists(settings.MODEL_PATH):
-                logger.info(f"Using HuggingFace Hub: {settings.MODEL_NAME}")
+            if settings.MODEL_SOURCE == "hub" or not os.path.exists(local_path):
+                logger.info(f"Local model at {local_path} not found or Hub requested. Source: {settings.MODEL_SOURCE}")
+                logger.info(f"Switching to HuggingFace Hub: {settings.MODEL_NAME}")
                 model_to_load = settings.MODEL_NAME
             else:
-                logger.info(f"Loading local model from {settings.MODEL_PATH}")
+                logger.info(f"Found local model at {local_path}")
             
             # Determine device
             if settings.DEVICE == "cuda" and torch.cuda.is_available():
@@ -45,6 +49,10 @@ class ModelService:
                 token=settings.HF_TOKEN
             )
             logger.info("Tokenizer loaded successfully")
+            
+            # Diagnostic: Check available memory
+            mem = psutil.virtual_memory()
+            logger.info(f"RAM Available: {mem.available / (1024**3):.2f} GB / Total: {mem.total / (1024**3):.2f} GB")
             
             # Load model
             logger.info(f"Loading weights from {model_to_load}... This may take a minute on CPU.")
