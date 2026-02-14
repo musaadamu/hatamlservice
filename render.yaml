@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: hatamlservice
+    runtime: python
+    pythonVersion: 3.9
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port 5000
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: HOST
+        value: 0.0.0.0
+      - key: RELOAD
+        value: false
+      - key: PYTHONUNBUFFERED
+        value: 1
