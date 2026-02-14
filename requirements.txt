@@ -3,20 +3,12 @@ fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 python-multipart>=0.0.6
 
-# ML & NLP (CPU Optimized for Render Free/Starter Tier)
---extra-index-url https://download.pytorch.org/whl/cpu
-torch>=2.0.0
-transformers>=4.37.0
-datasets>=2.16.0
-sentencepiece>=0.1.99
-safetensors>=0.4.0
-psutil>=5.9.0
-accelerate>=0.26.0
+# HTTP Client (for HuggingFace API calls)
+httpx>=0.26.0
+aiohttp>=3.9.0
+requests>=2.31.0
 
-# Explainability
-lime>=0.2.0.1
-
-# Data Processing
+# Data Processing (minimal - no heavy ML stack)
 numpy>=1.24.0
 pandas>=2.0.0
 scikit-learn>=1.4.0
@@ -29,10 +21,16 @@ pydantic-settings>=2.1.0
 # Logging
 loguru>=0.7.2
 
-# HTTP Client
-httpx>=0.26.0
-aiohttp>=3.9.0
-
 # CORS
 fastapi-cors>=0.0.6
+
+# Note: We no longer need:
+# - torch (too heavy for Render free tier)
+# - transformers (model is on HuggingFace API)
+# - datasets
+# - sentencepiece
+# - safetensors
+# - psutil
+# - accelerate
+# - lime (optional - can be added back for local explainability)
 

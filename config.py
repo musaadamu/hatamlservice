@@ -34,15 +34,12 @@ class Settings(BaseSettings):
             return v
         return [str(v)]
 
-    # Model Configuration
-    MODEL_PATH: str = "../phdhatamodel"
+    # Model Configuration - HuggingFace Inference API
     MODEL_NAME: str = "msmaje/phdhatamodel"
-    MODEL_SOURCE: str = "local"  # "local" or "hub"
+    HF_API_ENDPOINT: str = "https://api-inference.huggingface.co/models/msmaje/phdhatamodel"
+    USE_HF_INFERENCE_API: bool = True  # Use HuggingFace free inference API
     MAX_SEQUENCE_LENGTH: int = 512
     BATCH_SIZE: int = 16
-    
-    # Device Configuration
-    DEVICE: str = "cuda"  # or "cpu"
     
     # Supported Languages
     SUPPORTED_LANGUAGES: List[str] = ["ha", "yo", "ig", "pcm"]
@@ -65,8 +62,11 @@ class Settings(BaseSettings):
     LIME_NUM_SAMPLES: int = 1000
     LIME_NUM_FEATURES: int = 10
     
-    # HF Hub
+    # HF Hub - API Token for HuggingFace Inference API
     HF_TOKEN: Optional[str] = None
+    
+    # Inference API Timeout
+    INFERENCE_API_TIMEOUT: int = 30  # seconds
     
     # Logging
     LOG_LEVEL: str = "INFO"

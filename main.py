@@ -101,9 +101,10 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "model_loaded": model_service.model is not None,
-        "device": str(model_service.device),
-        "supported_languages": settings.SUPPORTED_LANGUAGES
+        "inference_type": "huggingface_api",
+        "api_endpoint": settings.HF_API_ENDPOINT,
+        "supported_languages": settings.SUPPORTED_LANGUAGES,
+        "model_name": settings.MODEL_NAME
     }
 
 

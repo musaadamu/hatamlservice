@@ -1,77 +1,49 @@
 """
-Model Service - Handles model loading and inference
+Model Service - Handles inference via HuggingFace Inference API
+Optimized for Render free tier (no heavy model loading)
 """
 
-import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import httpx
 from loguru import logger
-import os
-import psutil
 from config import settings
 
 
 class ModelService:
-    """Service for loading and running the HATA model"""
+    """Service for inference via HuggingFace Inference API"""
     
     def __init__(self):
-        self.model = None
-        self.tokenizer = None
-        self.device = None
+        self.model = None  # Not used with API approach
+        self.tokenizer = None  # Not used with API approach
+        self.device = None  # Not used with API approach
+        self.api_endpoint = settings.HF_API_ENDPOINT
+        self.hf_token = settings.HF_TOKEN
         self.load_model()
     
     def load_model(self):
-        """Load the model from local directory or HuggingFace Hub"""
+        """Initialize HuggingFace Inference API connection"""
         try:
-            # Determine source
-            # Try absolute path relative to current working directory
-            local_path = os.path.abspath(settings.MODEL_PATH)
-            model_to_load = local_path
+            if not self.hf_token:
+                logger.warning("HF_TOKEN not set. Using HuggingFace Inference API without authentication.")
+                logger.warning("This may result in rate limiting. Set HF_TOKEN in .env for better performance.")
             
-            # Check if we should use Hub or if local path is missing
-            if settings.MODEL_SOURCE == "hub" or not os.path.exists(local_path):
-                logger.info(f"Local model at {local_path} not found or Hub requested. Source: {settings.MODEL_SOURCE}")
-                logger.info(f"Switching to HuggingFace Hub: {settings.MODEL_NAME}")
-                model_to_load = settings.MODEL_NAME
-            else:
-                logger.info(f"Found local model at {local_path}")
-            
-            # Determine device
-            if settings.DEVICE == "cuda" and torch.cuda.is_available():
-                self.device = torch.device("cuda")
-                logger.info(f"Using GPU: {torch.cuda.get_device_name(0)}")
-            else:
-                self.device = torch.device("cpu")
-                logger.info("Using CPU")
-            
-            # Load tokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                model_to_load,
-                token=settings.HF_TOKEN
-            )
-            logger.info("Tokenizer loaded successfully")
-            
-            # Diagnostic: Check available memory
-            mem = psutil.virtual_memory()
-            logger.info(f"RAM Available: {mem.available / (1024**3):.2f} GB / Total: {mem.total / (1024**3):.2f} GB")
-            
-            # Load model
-            logger.info(f"Loading weights from {model_to_load}... This may take a minute on CPU.")
-            self.model = AutoModelForSequenceClassification.from_pretrained(
-                model_to_load,
-                low_cpu_mem_usage=True,
-                token=settings.HF_TOKEN
-            )
-            self.model.to(self.device)
-            self.model.eval()
-            logger.info("Model loaded successfully")
+            logger.info(f"Using HuggingFace Inference API")
+            logger.info(f"Model endpoint: {self.api_endpoint}")
+            logger.info("Model service initialized successfully (using API)")
             
         except Exception as e:
-            logger.error(f"Error loading model: {e}")
+            logger.error(f"Error initializing model service: {e}")
             raise
+    
+    def _prepare_headers(self) -> dict:
+        """Prepare headers for API request"""
+        headers = {"Content-Type": "application/json"}
+        if self.hf_token:
+            headers["Authorization"] = f"Bearer {self.hf_token}"
+        return headers
     
     def predict(self, text: str, language: str) -> dict:
         """
-        Make prediction on input text
+        Make prediction via HuggingFace Inference API
         
         Args:
             text: Input text to classify
@@ -85,46 +57,91 @@ class ModelService:
             if language not in settings.SUPPORTED_LANGUAGES:
                 raise ValueError(f"Unsupported language: {language}")
             
-            # Tokenize input
-            inputs = self.tokenizer(
-                text,
-                return_tensors="pt",
-                truncation=True,
-                max_length=settings.MAX_SEQUENCE_LENGTH,
-                padding=True
-            )
+            # Prepare payload for text classification
+            payload = {
+                "inputs": text,
+                "parameters": {
+                    "truncation": True
+                }
+            }
             
-            # Move to device
-            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            headers = self._prepare_headers()
             
-            # Make prediction
-            with torch.no_grad():
-                outputs = self.model(**inputs)
-                logits = outputs.logits
-                probabilities = torch.nn.functional.softmax(logits, dim=-1)
+            # Call HuggingFace Inference API
+            try:
+                response = httpx.post(
+                    self.api_endpoint,
+                    json=payload,
+                    headers=headers,
+                    timeout=settings.INFERENCE_API_TIMEOUT
+                )
+                response.raise_for_status()
+            except httpx.TimeoutException:
+                logger.error("HuggingFace API request timed out")
+                raise ValueError("Model inference timed out. Please try again.")
+            except httpx.HTTPError as e:
+                logger.error(f"HuggingFace API error: {e}")
+                raise ValueError(f"Model inference failed: {str(e)}")
             
-            # Get prediction
-            predicted_class = torch.argmax(probabilities, dim=-1).item()
-            confidence = probabilities[0][predicted_class].item()
+            # Parse response
+            api_response = response.json()
             
-            # Get tokens for explainability
-            tokens = self.tokenizer.convert_ids_to_tokens(inputs['input_ids'][0])
+            # Handle different response formats from HF API
+            if isinstance(api_response, list) and len(api_response) > 0:
+                # Standard text classification response format
+                predictions = api_response[0]
+            else:
+                logger.error(f"Unexpected API response format: {api_response}")
+                raise ValueError("Unexpected response from HuggingFace API")
+            
+            # Extract label and score
+            # HF API returns list of dicts with 'label' and 'score'
+            if not isinstance(predictions, list) or len(predictions) == 0:
+                raise ValueError("Invalid prediction format from API")
+            
+            # Sort by score (descending) to get top prediction
+            predictions = sorted(predictions, key=lambda x: x.get('score', 0), reverse=True)
+            
+            # Map label to our schema (0 = Human-written, 1 = AI-generated)
+            top_prediction = predictions[0]
+            label_text = top_prediction.get('label', 'UNKNOWN')
+            confidence = top_prediction.get('score', 0.0)
+            
+            # Convert label text to label index
+            # The model returns either "LABEL_0" (Human) or "LABEL_1" (AI)
+            predicted_class = 0 if "LABEL_0" in label_text else 1
+            
+            # Build probabilities array [human_prob, ai_prob]
+            probabilities = [0.0, 0.0]
+            for pred in predictions[:2]:
+                label = pred.get('label', '')
+                score = pred.get('score', 0.0)
+                if "LABEL_0" in label:
+                    probabilities[0] = score
+                elif "LABEL_1" in label:
+                    probabilities[1] = score
+            
+            # Simple tokenization by splitting on whitespace
+            tokens = text.split()
             
             result = {
                 "prediction": {
                     "label": predicted_class,
                     "label_text": settings.LABELS[predicted_class],
                     "confidence": float(confidence),
-                    "probabilities": probabilities[0].cpu().tolist()
+                    "probabilities": probabilities,
+                    "human_prob": float(probabilities[0]),
+                    "ai_prob": float(probabilities[1])
                 },
                 "language": language,
                 "language_name": settings.LANGUAGE_NAMES.get(language, language),
                 "tokens": tokens,
                 "text_length": len(text),
-                "token_count": len(tokens)
+                "token_count": len(tokens),
+                "inference_source": "huggingface_api"
             }
             
-            logger.info(f"Prediction made: {predicted_class} ({confidence:.4f})")
+            logger.info(f"Prediction via HF API: {predicted_class} ({confidence:.4f})")
             return result
             
         except Exception as e:
@@ -134,6 +151,7 @@ class ModelService:
     def batch_predict(self, texts: list, languages: list) -> list:
         """
         Make predictions on multiple texts
+        Uses sequential API calls (respects rate limits better)
         
         Args:
             texts: List of input texts
@@ -148,20 +166,25 @@ class ModelService:
                 result = self.predict(text, language)
                 results.append(result)
             except Exception as e:
-                logger.error(f"Batch prediction error: {e}")
-                results.append({"error": str(e)})
+                logger.error(f"Batch prediction error for text: {e}")
+                results.append({
+                    "error": str(e),
+                    "language": language,
+                    "inference_source": "huggingface_api"
+                })
         
         return results
     
     def get_model_info(self) -> dict:
         """Get model information"""
         return {
-            "model_path": settings.MODEL_PATH,
             "model_name": settings.MODEL_NAME,
-            "device": str(self.device),
+            "inference_type": "huggingface_api",
+            "api_endpoint": settings.HF_API_ENDPOINT,
             "supported_languages": settings.SUPPORTED_LANGUAGES,
             "max_sequence_length": settings.MAX_SEQUENCE_LENGTH,
-            "labels": settings.LABELS
+            "labels": settings.LABELS,
+            "note": "Running on HuggingFace Inference API - optimized for Render free tier"
         }
 
 
