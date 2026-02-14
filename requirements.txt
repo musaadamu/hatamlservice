@@ -24,6 +24,9 @@ loguru>=0.7.2
 # CORS
 fastapi-cors>=0.0.6
 
+# Explainability (LIME for PhD research)
+lime>=0.2.0.1
+
 # Note: We no longer need:
 # - torch (too heavy for Render free tier)
 # - transformers (model is on HuggingFace API)
@@ -32,5 +35,4 @@ fastapi-cors>=0.0.6
 # - safetensors
 # - psutil
 # - accelerate
-# - lime (optional - can be added back for local explainability)
 
