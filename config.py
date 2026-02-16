@@ -36,7 +36,7 @@ class Settings(BaseSettings):
 
     # Model Configuration - HuggingFace Inference API
     MODEL_NAME: str = "msmaje/phdhatamodel"
-    HF_API_ENDPOINT: str = "https://api-inference.huggingface.co/models/msmaje/phdhatamodel"
+    HF_API_ENDPOINT: str = "https://router.huggingface.co/models/msmaje/phdhatamodel"
     USE_HF_INFERENCE_API: bool = True  # Use HuggingFace free inference API
     MAX_SEQUENCE_LENGTH: int = 512
     BATCH_SIZE: int = 16
