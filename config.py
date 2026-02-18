@@ -35,8 +35,8 @@ class Settings(BaseSettings):
         return [str(v)]
 
     # Model Configuration - Local Inference (Download from HuggingFace)
-    MODEL_NAME: str = "msmaje/afroBERTaphdmodel500mb"
-    HF_API_ENDPOINT: str = "https://api-inference.huggingface.co/models/msmaje/afroBERTaphdmodel500mb"
+    MODEL_NAME: str = "msmaje/Quantized5000mbmodelhataphd"
+    HF_API_ENDPOINT: str = "https://api-inference.huggingface.co/models/msmaje/Quantized5000mbmodelhataphd"
     USE_HF_INFERENCE_API: bool = False  # Set to False to load model locally on Render
     MODEL_CACHE_DIR: str = "./model_cache"
     MAX_SEQUENCE_LENGTH: int = 512
