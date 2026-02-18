@@ -15,12 +15,14 @@ scikit-learn>=1.4.0
 
 # Machine Learning - Local Inference
 # Using CPU-only versions for Render to stay within memory limits
-torch --index-url https://download.pytorch.org/whl/cpu
-transformers>=4.41.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+transformers>=4.41.2
 sentencepiece>=0.2.0
 sacremoses>=0.1.1
 safetensors>=0.4.3
 accelerate>=0.30.0
+cloudpickle>=3.0.0
 
 # Utilities
 python-dotenv>=1.0.0
