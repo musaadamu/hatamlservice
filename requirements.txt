@@ -3,15 +3,24 @@ fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 python-multipart>=0.0.6
 
-# HTTP Client (for HuggingFace API calls)
+# HTTP Client
 httpx>=0.26.0
 aiohttp>=3.9.0
 requests>=2.31.0
 
-# Data Processing (minimal - no heavy ML stack)
+# Data Processing
 numpy>=1.24.0
 pandas>=2.0.0
 scikit-learn>=1.4.0
+
+# Machine Learning - Local Inference
+# Using CPU-only versions for Render to stay within memory limits
+torch --index-url https://download.pytorch.org/whl/cpu
+transformers>=4.41.0
+sentencepiece>=0.2.0
+sacremoses>=0.1.1
+safetensors>=0.4.3
+accelerate>=0.30.0
 
 # Utilities
 python-dotenv>=1.0.0
@@ -26,13 +35,4 @@ fastapi-cors>=0.0.6
 
 # Explainability (LIME for PhD research)
 lime>=0.2.0.1
-
-# Note: We no longer need:
-# - torch (too heavy for Render free tier)
-# - transformers (model is on HuggingFace API)
-# - datasets
-# - sentencepiece
-# - safetensors
-# - psutil
-# - accelerate
 

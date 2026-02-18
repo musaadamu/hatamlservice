@@ -34,12 +34,14 @@ class Settings(BaseSettings):
             return v
         return [str(v)]
 
-    # Model Configuration - HuggingFace Inference API
+    # Model Configuration - Local Inference (Download from HuggingFace)
     MODEL_NAME: str = "msmaje/afroBERTaphdmodel500mb"
     HF_API_ENDPOINT: str = "https://api-inference.huggingface.co/models/msmaje/afroBERTaphdmodel500mb"
-    USE_HF_INFERENCE_API: bool = True  # Use HuggingFace free inference API
+    USE_HF_INFERENCE_API: bool = False  # Set to False to load model locally on Render
+    MODEL_CACHE_DIR: str = "./model_cache"
     MAX_SEQUENCE_LENGTH: int = 512
-    BATCH_SIZE: int = 16
+    BATCH_SIZE: int = 8  # Reduced for local inference memory limits
+    USE_HALF_PRECISION: bool = False  # Set to True for FP16 inference (if supported)
     
     # Supported Languages
     SUPPORTED_LANGUAGES: List[str] = ["ha", "yo", "ig", "pcm"]
