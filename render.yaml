@@ -2,7 +2,7 @@ services:
   - type: web
     name: hatamlservice  # Keeps your existing service name
     runtime: python
-    pythonVersion: 3.11
+    pythonVersion: 3.11.8
     plan: free
     buildCommand: pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
     startCommand: uvicorn app:app --host 0.0.0.0 --port 5000
@@ -20,6 +20,6 @@ services:
       - key: PIP_RETRIES
         value: 10
       - key: PYTHON_VERSION
-        value: 3.11
+        value: 3.11.8
       - key: HF_TOKEN
         sync: false
