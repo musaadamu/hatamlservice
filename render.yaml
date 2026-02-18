@@ -19,5 +19,7 @@ services:
         value: 1000
       - key: PIP_RETRIES
         value: 10
+      - key: PYTHON_VERSION
+        value: 3.11
       - key: HF_TOKEN
-        sync: false  # Allows sync with HuggingFace token from Render dashboard
+        sync: false

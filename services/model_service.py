@@ -63,10 +63,10 @@ class ModelService:
                     self.model = torch.quantization.quantize_dynamic(
                         self.model, {torch.nn.Linear}, dtype=torch.qint8
                     )
-                    logger.info("✅ Model quantized successfully")
+                    logger.info("✅ Model loaded and quantized")
+                    logger.info("📦 Estimated RAM usage: ~150-200MB")
                 
                 self.model.eval()  # Set to evaluation mode
-                
                 logger.info("Local model loaded successfully")
             
         except Exception as e:
