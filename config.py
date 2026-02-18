@@ -35,8 +35,8 @@ class Settings(BaseSettings):
         return [str(v)]
 
     # Model Configuration - HuggingFace Inference API
-    MODEL_NAME: str = "msmaje/phdhatamodel"
-    HF_API_ENDPOINT: str = "https://router.huggingface.co/models/msmaje/phdhatamodel"
+    MODEL_NAME: str = "msmaje/afroBERTaphdmodel500mb"
+    HF_API_ENDPOINT: str = "https://api-inference.huggingface.co/models/msmaje/afroBERTaphdmodel500mb"
     USE_HF_INFERENCE_API: bool = True  # Use HuggingFace free inference API
     MAX_SEQUENCE_LENGTH: int = 512
     BATCH_SIZE: int = 16
