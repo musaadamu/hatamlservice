@@ -1,8 +1,9 @@
 services:
   - type: web
-    name: hatamlservice
+    name: hatamlservice  # Keeps your existing service name
     runtime: python
     pythonVersion: 3.11
+    plan: free
     buildCommand: pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
     startCommand: uvicorn app:app --host 0.0.0.0 --port 5000
     envVars:
@@ -18,3 +19,5 @@ services:
         value: 1000
       - key: PIP_RETRIES
         value: 10
+      - key: HF_TOKEN
+        sync: false  # Allows sync with HuggingFace token from Render dashboard

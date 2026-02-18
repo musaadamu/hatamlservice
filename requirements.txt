@@ -1,6 +1,6 @@
 # Web Framework
-fastapi>=0.109.0
-uvicorn[standard]>=0.27.0
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
 python-multipart>=0.0.6
 
 # HTTP Client
@@ -16,9 +16,10 @@ scikit-learn>=1.4.0
 # Machine Learning - Local Inference
 # Using CPU-only versions for Render to stay within memory limits
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch
-transformers>=4.41.2
-sentencepiece>=0.2.0
+torch==2.1.0
+transformers==4.35.0
+sentencepiece==0.1.99
+protobuf==3.20.3
 sacremoses>=0.1.1
 safetensors>=0.4.3
 accelerate>=0.30.0

@@ -34,14 +34,15 @@ class Settings(BaseSettings):
             return v
         return [str(v)]
 
-    # Model Configuration - Local Inference (Download from HuggingFace)
-    MODEL_NAME: str = "msmaje/Quantized5000mbmodelhataphd"
-    HF_API_ENDPOINT: str = "https://api-inference.huggingface.co/models/msmaje/Quantized5000mbmodelhataphd"
-    USE_HF_INFERENCE_API: bool = False  # Set to False to load model locally on Render
+    # Model Configuration - Switching to stable model with runtime quantization
+    MODEL_NAME: str = "msmaje/afroBERTaphdmodel500mb"
+    HF_API_ENDPOINT: str = "https://api-inference.huggingface.co/models/msmaje/afroBERTaphdmodel500mb"
+    USE_HF_INFERENCE_API: bool = False  # Set to False to load model locally
     MODEL_CACHE_DIR: str = "./model_cache"
+    USE_DYNAMIC_QUANTIZATION: bool = True  # Enable INT8 quantization for RAM savings
     MAX_SEQUENCE_LENGTH: int = 512
-    BATCH_SIZE: int = 8  # Reduced for local inference memory limits
-    USE_HALF_PRECISION: bool = False  # Set to True for FP16 inference (if supported)
+    BATCH_SIZE: int = 8
+    USE_HALF_PRECISION: bool = False
     
     # Supported Languages
     SUPPORTED_LANGUAGES: List[str] = ["ha", "yo", "ig", "pcm"]

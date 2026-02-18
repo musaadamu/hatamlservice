@@ -56,10 +56,16 @@ class ModelService:
                 )
                 
                 self.model.to(self.device)
-                self.model.eval()  # Set to evaluation mode
                 
-                # Optional: Quantization (very effective for CPU inference)
-                # self.model = torch.quantization.quantize_dynamic(self.model, {torch.nn.Linear}, dtype=torch.qint8)
+                # Apply Dynamic Quantization (INT8) to save RAM on CPU
+                if settings.USE_DYNAMIC_QUANTIZATION and self.device.type == "cpu":
+                    logger.info("⚙️ Applying Dynamic Quantization (INT8) to save RAM...")
+                    self.model = torch.quantization.quantize_dynamic(
+                        self.model, {torch.nn.Linear}, dtype=torch.qint8
+                    )
+                    logger.info("✅ Model quantized successfully")
+                
+                self.model.eval()  # Set to evaluation mode
                 
                 logger.info("Local model loaded successfully")
             
