@@ -101,7 +101,7 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "inference_type": "huggingface_api",
+        "inference_type": "huggingface_api" if settings.USE_HF_INFERENCE_API else "local",
         "api_endpoint": settings.HF_API_ENDPOINT,
         "supported_languages": settings.SUPPORTED_LANGUAGES,
         "model_name": settings.MODEL_NAME

@@ -35,8 +35,8 @@ class Settings(BaseSettings):
         return [str(v)]
 
     # Model Configuration - Switching to stable model with runtime quantization
-    MODEL_NAME: str = "msmaje/afroBERTaphdmodel500mb"
-    HF_API_ENDPOINT: str = "https://api-inference.huggingface.co/models/msmaje/afroBERTaphdmodel500mb"
+    MODEL_NAME: str = "msmaje/Quantizedphdhatamodel"
+    HF_API_ENDPOINT: str = "https://api-inference.huggingface.co/models/msmaje/Quantizedphdhatamodel"
     USE_HF_INFERENCE_API: bool = False  # Set to False to load model locally
     MODEL_CACHE_DIR: str = "./model_cache"
     USE_DYNAMIC_QUANTIZATION: bool = True  # Enable INT8 quantization for RAM savings
