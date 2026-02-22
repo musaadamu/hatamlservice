@@ -11,6 +11,13 @@ from loguru import logger
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from config import settings
 
+# Try to import optimum for ONNX support
+try:
+    from optimum.onnxruntime import ORTModelForSequenceClassification
+    OPTIMUM_AVAILABLE = True
+except ImportError:
+    OPTIMUM_AVAILABLE = False
+
 
 class ModelService:
     """Service for inference supporting both local and API-based models"""
@@ -43,31 +50,47 @@ class ModelService:
                 self.tokenizer = AutoTokenizer.from_pretrained(
                     settings.MODEL_NAME,
                     cache_dir=settings.MODEL_CACHE_DIR,
-                    token=self.hf_token
+                    token=self.hf_token,
+                    use_fast=False
                 )
                 
                 # Load model with memory optimizations
-                # low_cpu_mem_usage=True and torch_dtype=torch.float32 for CPU
-                self.model = AutoModelForSequenceClassification.from_pretrained(
-                    settings.MODEL_NAME,
-                    cache_dir=settings.MODEL_CACHE_DIR,
-                    token=self.hf_token,
-                    low_cpu_mem_usage=True
-                )
-                
-                self.model.to(self.device)
-                
-                # Apply Dynamic Quantization (INT8) to save RAM on CPU
-                if settings.USE_DYNAMIC_QUANTIZATION and self.device.type == "cpu":
-                    logger.info("⚙️ Applying Dynamic Quantization (INT8) to save RAM...")
-                    self.model = torch.quantization.quantize_dynamic(
-                        self.model, {torch.nn.Linear}, dtype=torch.qint8
+                if settings.USE_ONNX and OPTIMUM_AVAILABLE:
+                    logger.info(f"🚀 Loading ONNX model: {settings.ONNX_FILE}...")
+                    self.model = ORTModelForSequenceClassification.from_pretrained(
+                        settings.MODEL_NAME,
+                        file_name=settings.ONNX_FILE,
+                        cache_dir=settings.MODEL_CACHE_DIR,
+                        token=self.hf_token,
+                        provider="CPUExecutionProvider"
                     )
-                    logger.info("✅ Model loaded and quantized")
-                    logger.info("📦 Estimated RAM usage: ~150-200MB")
+                    logger.info("✅ ONNX model loaded with Optimum")
+                else:
+                    if settings.USE_ONNX:
+                        logger.warning("⚠️ Optimum not available, falling back to standard PyTorch")
+                    
+                    logger.info(f"Loading PyTorch model locally from {settings.MODEL_NAME}...")
+                    # low_cpu_mem_usage=True and torch_dtype=torch.float32 for CPU
+                    self.model = AutoModelForSequenceClassification.from_pretrained(
+                        settings.MODEL_NAME,
+                        cache_dir=settings.MODEL_CACHE_DIR,
+                        token=self.hf_token,
+                        low_cpu_mem_usage=True
+                    )
+                    self.model.to(self.device)
+                    
+                    # Apply Dynamic Quantization (INT8) to save RAM on CPU
+                    if settings.USE_DYNAMIC_QUANTIZATION and self.device.type == "cpu":
+                        logger.info("⚙️ Applying Dynamic Quantization (INT8) to save RAM...")
+                        self.model = torch.quantization.quantize_dynamic(
+                            self.model, {torch.nn.Linear}, dtype=torch.qint8
+                        )
+                        logger.info("✅ Model quantized")
                 
-                self.model.eval()  # Set to evaluation mode
-                logger.info("Local model loaded successfully")
+                if hasattr(self.model, "eval"):
+                    self.model.eval()  # Only needed for PyTorch, but harmless for ORT
+                
+                logger.info("Local model initialized successfully")
             
         except Exception as e:
             logger.error(f"Error initializing model service: {e}")

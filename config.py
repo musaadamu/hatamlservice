@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     BATCH_SIZE: int = 8
     USE_HALF_PRECISION: bool = False
     
+    # ONNX Configuration
+    ONNX_FILE: str = "model_quantized.onnx"
+    USE_ONNX: bool = True
+    
     # Supported Languages
     SUPPORTED_LANGUAGES: List[str] = ["ha", "yo", "ig", "pcm"]
     
