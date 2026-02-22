@@ -9,7 +9,7 @@ aiohttp>=3.9.0
 requests>=2.31.0
 
 # Data Processing
-numpy==1.26.4
+numpy>=1.24.0
 pandas>=2.0.0
 scikit-learn>=1.4.0
 
@@ -27,7 +27,7 @@ cloudpickle>=3.0.0
 
 # ONNX Runtime for optimized inference
 optimum[onnxruntime]>=1.14.0
-onnxruntime>=1.16.0
+onnxruntime-cpu>=1.16.0
 
 # Utilities
 python-dotenv>=1.0.0
