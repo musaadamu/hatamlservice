@@ -65,8 +65,8 @@ class Settings(BaseSettings):
         1: "AI-generated"
     }
     
-    # Explainability
-    LIME_NUM_SAMPLES: int = 1000
+    # Explainability - Reduced for faster processing on CPU
+    LIME_NUM_SAMPLES: int = 100  # Reduced from 1000 to 100 for 10x speed improvement
     LIME_NUM_FEATURES: int = 10
     
     # HF Hub - API Token for HuggingFace Inference API
