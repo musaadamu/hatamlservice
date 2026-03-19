@@ -22,8 +22,14 @@ class Settings(BaseSettings):
     WORKERS: int = 1
     RELOAD: bool = True
     
-    # CORS
-    CORS_ORIGINS: Any = ["http://localhost:3000", "http://localhost:3001", "https://hatafrontend.vercel.app"]
+    # CORS - Allow backend and frontend to access ML service
+    CORS_ORIGINS: Any = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://hatafrontend.vercel.app",
+        "https://hatafrontend-1fv4sh97i-musa-adamus-projects.vercel.app",
+        "https://hatabackend.onrender.com"
+    ]
     
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
