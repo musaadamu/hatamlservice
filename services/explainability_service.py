@@ -41,8 +41,9 @@ class ExplainabilityService:
                     try:
                         result = self.model_service.predict(t, language)
                         probas.append(result['prediction']['probabilities'])
-                    except:
+                    except Exception as e:
                         # Return neutral probabilities on error
+                        logger.warning(f"LIME sample prediction error: {str(e)[:50]}")
                         probas.append([0.5, 0.5])
                 return np.array(probas)
             

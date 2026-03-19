@@ -11,15 +11,18 @@ import gc
 from loguru import logger
 from config import settings
 
-# Try to import transformers for local inference
+# Try to import transformers for local inference (only if not using API mode)
 TRANSFORMERS_AVAILABLE = False
-try:
-    from transformers import AutoTokenizer, AutoModelForSequenceClassification
-    import torch
-    TRANSFORMERS_AVAILABLE = True
-    logger.info("✅ Transformers and PyTorch available for local inference")
-except ImportError:
-    logger.warning("⚠️ Transformers not available - will use HuggingFace API")
+if not settings.USE_HF_INFERENCE_API:
+    try:
+        from transformers import AutoTokenizer, AutoModelForSequenceClassification
+        import torch
+        TRANSFORMERS_AVAILABLE = True
+        logger.info("✅ Transformers and PyTorch available for local inference")
+    except ImportError:
+        logger.warning("⚠️ Transformers not available - will use HuggingFace API")
+else:
+    logger.info("🌐 Using HuggingFace Inference API mode (no local model loading)")
 
 class ModelService:
     """Service for inference supporting both local and API-based models"""

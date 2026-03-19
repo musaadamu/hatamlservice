@@ -34,19 +34,19 @@ class Settings(BaseSettings):
             return v
         return [str(v)]
 
-    # Model Configuration - Switching to stable model with runtime quantization
+    # Model Configuration - Using HuggingFace Inference API for Render Free Tier
     MODEL_NAME: str = "msmaje/Quantizedphdhatamodel"
     HF_API_ENDPOINT: str = "https://api-inference.huggingface.co/models/msmaje/Quantizedphdhatamodel"
-    USE_HF_INFERENCE_API: bool = False  # Set to False to load model locally
+    USE_HF_INFERENCE_API: bool = True  # MUST be True for Render free tier (512MB RAM limit)
     MODEL_CACHE_DIR: str = "./model_cache"
-    USE_DYNAMIC_QUANTIZATION: bool = True  # Enable INT8 quantization for RAM savings
+    USE_DYNAMIC_QUANTIZATION: bool = False  # Not needed for API mode
     MAX_SEQUENCE_LENGTH: int = 512
     BATCH_SIZE: int = 8
     USE_HALF_PRECISION: bool = False
-    
-    # ONNX Configuration
+
+    # ONNX Configuration (not used in API mode)
     ONNX_FILE: str = "model_quantized.onnx"
-    USE_ONNX: bool = True
+    USE_ONNX: bool = False
     
     # Supported Languages
     SUPPORTED_LANGUAGES: List[str] = ["ha", "yo", "ig", "pcm"]
