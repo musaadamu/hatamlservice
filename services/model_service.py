@@ -1,60 +1,50 @@
 """
-Model Service - Handles inference via Local Model or HuggingFace API
-Optimized for memory efficiency using Quantized Model
-Model: msmaje/Quantizedphdhatamodel (INT8 quantized for faster inference)
+Model Service - AWS Lambda Local Model Inference
+Optimized for AWS Lambda deployment with local model loading
+Model: msmaje/Quantizedphdhatamodel (INT8 quantized for memory efficiency)
 """
 
 import os
-import httpx
 import numpy as np
 import gc
 from loguru import logger
 from config import settings
 
-# Try to import transformers for local inference (only if not using API mode)
-TRANSFORMERS_AVAILABLE = False
-if not settings.USE_HF_INFERENCE_API:
-    try:
-        from transformers import AutoTokenizer, AutoModelForSequenceClassification
-        import torch
-        TRANSFORMERS_AVAILABLE = True
-        logger.info("✅ Transformers and PyTorch available for local inference")
-    except ImportError:
-        logger.warning("⚠️ Transformers not available - will use HuggingFace API")
-else:
-    logger.info("🌐 Using HuggingFace Inference API mode (no local model loading)")
+# Import transformers for local inference on AWS Lambda
+try:
+    from transformers import AutoTokenizer, AutoModelForSequenceClassification
+    import torch
+    TRANSFORMERS_AVAILABLE = True
+    logger.info("✅ Transformers and PyTorch available for local inference on AWS Lambda")
+except ImportError as e:
+    TRANSFORMERS_AVAILABLE = False
+    logger.error(f"❌ CRITICAL: Transformers not available - {e}")
+    raise ImportError("PyTorch and Transformers are required for AWS Lambda deployment")
 
 class ModelService:
-    """Service for inference supporting both local and API-based models"""
-    
+    """Service for local model inference on AWS Lambda"""
+
     def __init__(self):
         self.model = None
         self.tokenizer = None
-        self.api_endpoint = settings.HF_API_ENDPOINT
         self.hf_token = settings.HF_TOKEN
-        self.use_api = settings.USE_HF_INFERENCE_API
-        
-        # Determine device without importing torch early
-        self.device = "cpu" 
-        
+
+        # AWS Lambda uses CPU (no GPU available)
+        self.device = "cpu"
+        logger.info(f"🖥️ Using device: {self.device}")
+
         self.load_model()
     
     def load_model(self):
-        """Initialize the quantized model from HuggingFace"""
+        """Load the quantized model locally on AWS Lambda"""
         try:
-            if self.use_api:
-                logger.info(f"🌐 Using HuggingFace Inference API: {self.api_endpoint}")
-                logger.info(f"📦 Model: {settings.MODEL_NAME}")
-                return
-
             if not TRANSFORMERS_AVAILABLE:
-                logger.warning("⚠️ Transformers not available, falling back to API mode")
-                self.use_api = True
-                return
+                raise RuntimeError("PyTorch and Transformers are required for AWS Lambda deployment")
 
-            logger.info(f"📦 Loading quantized model from HuggingFace: {settings.MODEL_NAME}")
+            logger.info(f"📦 Loading quantized model from HuggingFace Hub: {settings.MODEL_NAME}")
+            logger.info(f"💾 Cache directory: {settings.MODEL_CACHE_DIR}")
 
-            # Create cache directory
+            # Create cache directory in /tmp (only writable directory on Lambda)
             os.makedirs(settings.MODEL_CACHE_DIR, exist_ok=True)
 
             # 1. Load Tokenizer
@@ -67,35 +57,38 @@ class ModelService:
             )
             logger.info("✅ Tokenizer loaded successfully")
 
-            # 2. Load Quantized Model
-            logger.info("🤖 Loading quantized model (this may take a moment)...")
+            # 2. Load Quantized Model (INT8 quantized for memory efficiency)
+            logger.info("🤖 Loading quantized model (this may take 30-60 seconds on first run)...")
             self.model = AutoModelForSequenceClassification.from_pretrained(
                 settings.MODEL_NAME,
                 cache_dir=settings.MODEL_CACHE_DIR,
                 token=self.hf_token,
                 torch_dtype=torch.float32,  # Quantized model uses float32
-                low_cpu_mem_usage=True  # Optimize memory usage
+                low_cpu_mem_usage=True,  # Optimize memory usage for Lambda
+                device_map=None  # Explicitly use CPU (no GPU on Lambda)
             )
 
-            # Set model to evaluation mode
+            # Move model to CPU and set to evaluation mode
+            self.model.to(self.device)
             self.model.eval()
-            logger.info("✅ Quantized model loaded successfully")
+            logger.info(f"✅ Quantized model loaded successfully on {self.device}")
 
             # 3. Clean up memory
             gc.collect()
-            logger.info("🎉 Model service initialized successfully!")
+
+            # Log memory usage (if available)
+            if torch.cuda.is_available():
+                logger.info(f"🔋 GPU Memory: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
+
+            logger.info("🎉 AWS Lambda model service initialized successfully!")
 
         except Exception as e:
-            logger.error(f"❌ Error initializing model service: {e}")
-            logger.info("🔄 Falling back to HuggingFace API mode")
-            self.use_api = True
+            logger.error(f"❌ CRITICAL ERROR initializing model service: {e}")
+            raise RuntimeError(f"Failed to load model on AWS Lambda: {e}")
     
     def predict(self, text: str, language: str) -> dict:
-        """Make prediction using selected inference method"""
-        if self.use_api:
-            return self._predict_api(text, language)
-        else:
-            return self._predict_local(text, language)
+        """Make prediction using local model inference on AWS Lambda"""
+        return self._predict_local(text, language)
 
     def _predict_local(self, text: str, language: str) -> dict:
         """Local inference using quantized PyTorch model"""
@@ -143,64 +136,14 @@ class ModelService:
             logger.error(f"❌ Local prediction error: {e}")
             raise
 
-    def _predict_api(self, text: str, language: str) -> dict:
-        """HuggingFace Inference API implementation"""
-        try:
-            headers = {"Authorization": f"Bearer {self.hf_token}"} if self.hf_token else {}
-            payload = {"inputs": text}
-
-            logger.info(f"🌐 Calling HuggingFace API for prediction...")
-            response = httpx.post(
-                self.api_endpoint,
-                json=payload,
-                headers=headers,
-                timeout=settings.INFERENCE_API_TIMEOUT
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            # Parse HuggingFace API response
-            # Format: [[{"label": "LABEL_0", "score": 0.99}, {"label": "LABEL_1", "score": 0.01}]]
-            if isinstance(data, list) and len(data) > 0:
-                predictions = data[0] if isinstance(data[0], list) else data
-
-                # Extract probabilities
-                label_0_score = next((p['score'] for p in predictions if p['label'] == 'LABEL_0'), 0.5)
-                label_1_score = next((p['score'] for p in predictions if p['label'] == 'LABEL_1'), 0.5)
-
-                probabilities = [label_0_score, label_1_score]
-                predicted_class = 0 if label_0_score > label_1_score else 1
-                confidence = max(probabilities)
-
-                logger.info(f"API Prediction: {predicted_class} ({confidence:.4f})")
-
-                return {
-                    "prediction": {
-                        "label": predicted_class,
-                        "label_text": settings.LABELS[predicted_class],
-                        "confidence": confidence,
-                        "probabilities": probabilities,
-                        "human_prob": probabilities[0],
-                        "ai_prob": probabilities[1]
-                    },
-                    "language": language,
-                    "language_name": settings.LANGUAGE_NAMES.get(language, language),
-                    "tokens": text.split(),
-                    "inference_source": "huggingface_api"
-                }
-            else:
-                raise ValueError(f"Unexpected API response format: {data}")
-
-        except Exception as e:
-            logger.error(f"❌ API prediction error: {e}")
-            raise
-
     def get_model_info(self) -> dict:
         """Get model information"""
         return {
             "model_name": settings.MODEL_NAME,
-            "inference_mode": "huggingface_api" if self.use_api else "local_quantized",
-            "device": self.device
+            "inference_mode": "aws_lambda_local",
+            "device": self.device,
+            "quantization": "INT8",
+            "cache_dir": settings.MODEL_CACHE_DIR
         }
 
     def batch_predict(self, texts: list, languages: list) -> list:

@@ -1,12 +1,15 @@
 """
 HATA ML Service - FastAPI Application
 Main entry point for the ML microservice
+Supports both local (uvicorn) and AWS Lambda (Mangum) deployment
 """
 
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional
+from mangum import Mangum
 from loguru import logger
 import sys
 import time
@@ -20,7 +23,14 @@ from services.bias_service import BiasDetectionService
 # Configure logger
 logger.remove()
 logger.add(sys.stdout, level=settings.LOG_LEVEL)
-logger.add("logs/ml_service.log", rotation="500 MB", level=settings.LOG_LEVEL)
+
+# Only add file logging when NOT running on Lambda (Lambda has read-only filesystem except /tmp)
+IS_LAMBDA = bool(os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+if not IS_LAMBDA:
+    logger.add("logs/ml_service.log", rotation="500 MB", level=settings.LOG_LEVEL)
+else:
+    logger.add("/tmp/ml_service.log", rotation="10 MB", level=settings.LOG_LEVEL)
+    logger.info("Running on AWS Lambda — file logs go to /tmp/")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -92,8 +102,16 @@ async def root():
     return {
         "service": settings.API_TITLE,
         "version": settings.API_VERSION,
-        "status": "running"
+        "status": "running",
+        "runtime": "aws_lambda" if IS_LAMBDA else "local"
     }
+
+
+@app.get("/ping")
+async def ping():
+    """Keep-warm endpoint for Lambda scheduled events (CloudWatch).
+    Call this every 5 minutes to avoid cold starts."""
+    return {"status": "warm", "timestamp": time.time()}
 
 
 @app.get("/health")
@@ -104,7 +122,8 @@ async def health_check():
         "inference_type": "huggingface_api" if settings.USE_HF_INFERENCE_API else "local",
         "api_endpoint": settings.HF_API_ENDPOINT,
         "supported_languages": settings.SUPPORTED_LANGUAGES,
-        "model_name": settings.MODEL_NAME
+        "model_name": settings.MODEL_NAME,
+        "runtime": "aws_lambda" if IS_LAMBDA else "local"
     }
 
 
@@ -195,6 +214,10 @@ async def batch_predict(request: BatchPredictionRequest):
     except Exception as e:
         logger.error(f"Batch prediction error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# AWS Lambda handler — Mangum adapts FastAPI's ASGI to Lambda's event interface
+handler = Mangum(app)
 
 
 if __name__ == "__main__":

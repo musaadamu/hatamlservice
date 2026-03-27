@@ -3,12 +3,19 @@ fastapi>=0.100.0
 uvicorn[standard]
 python-multipart
 
-# HTTP Client (for HuggingFace API calls)
+# AWS Lambda Adapter
+mangum>=0.17.0
+
+# HTTP Client (for API communication)
 httpx>=0.26.0
 aiohttp>=3.9.0
 requests>=2.31.0
 
-# Data Processing (minimal - only what LIME needs)
+# Machine Learning - PyTorch and Transformers for local model inference
+torch>=2.0.0
+transformers>=4.30.0
+
+# Data Processing
 numpy>=1.24.0
 scikit-learn>=1.3.0
 
@@ -24,6 +31,7 @@ fastapi-cors
 # Explainability (LIME for PhD research)
 lime>=0.2.0.1
 
-# NOTE: We do NOT install PyTorch, Transformers, or ONNX for API-only mode
-# This keeps memory usage under 512MB for Render free tier
-# The model runs on HuggingFace's servers via Inference API
+# NOTE: AWS Lambda Configuration
+# - Memory: 3008 MB (sufficient for quantized model + PyTorch)
+# - Timeout: 300 seconds (5 minutes for LIME processing)
+# - Model loads directly from HuggingFace Hub into /tmp/model_cache

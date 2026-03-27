@@ -1,0 +1,25 @@
+# Ignore everything that doesn't need to be in the Lambda container
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.git/
+.gitignore
+logs/
+*.log
+.env
+.env.example
+*.md
+mlservices/
+model_cache/
+.cache/
+.pytest_cache/
+*.egg
+build/
+dist/
+.vscode/
+.idea/
+train_ensemble.py
+phdmodeltraining.py
+render.yaml

@@ -40,17 +40,16 @@ class Settings(BaseSettings):
             return v
         return [str(v)]
 
-    # Model Configuration - Using HuggingFace Inference API for Render Free Tier
+    # Model Configuration - AWS Lambda Local Model Loading
     MODEL_NAME: str = "msmaje/Quantizedphdhatamodel"
-    HF_API_ENDPOINT: str = "https://api-inference.huggingface.co/models/msmaje/Quantizedphdhatamodel"
-    USE_HF_INFERENCE_API: bool = True  # MUST be True for Render free tier (512MB RAM limit)
-    MODEL_CACHE_DIR: str = "./model_cache"
-    USE_DYNAMIC_QUANTIZATION: bool = False  # Not needed for API mode
+    USE_HF_INFERENCE_API: bool = False  # Load model locally on AWS Lambda (3008MB RAM available)
+    MODEL_CACHE_DIR: str = "/tmp/model_cache"  # AWS Lambda writable directory
+    USE_DYNAMIC_QUANTIZATION: bool = True  # Use INT8 quantization for memory efficiency
     MAX_SEQUENCE_LENGTH: int = 512
     BATCH_SIZE: int = 8
-    USE_HALF_PRECISION: bool = False
+    USE_HALF_PRECISION: bool = False  # Quantized model already optimized
 
-    # ONNX Configuration (not used in API mode)
+    # ONNX Configuration (optional optimization)
     ONNX_FILE: str = "model_quantized.onnx"
     USE_ONNX: bool = False
     
@@ -71,15 +70,12 @@ class Settings(BaseSettings):
         1: "AI-generated"
     }
     
-    # Explainability - Reduced for faster processing on CPU
-    LIME_NUM_SAMPLES: int = 100  # Reduced from 1000 to 100 for 10x speed improvement
+    # Explainability - Optimized for AWS Lambda
+    LIME_NUM_SAMPLES: int = 100  # Reduced from 1000 to 100 for 24x speed improvement
     LIME_NUM_FEATURES: int = 10
-    
-    # HF Hub - API Token for HuggingFace Inference API
-    HF_TOKEN: Optional[str] = None
-    
-    # Inference API Timeout
-    INFERENCE_API_TIMEOUT: int = 30  # seconds
+
+    # HF Hub - Token for downloading model from HuggingFace Hub
+    HF_TOKEN: Optional[str] = None  # Required for downloading private/gated models
     
     # Logging
     LOG_LEVEL: str = "INFO"
