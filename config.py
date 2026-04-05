@@ -1,5 +1,6 @@
 """
 ML Service Configuration
+Supports both HuggingFace Inference API (Render) and Local Model (development/Lambda)
 """
 
 import os
@@ -40,14 +41,25 @@ class Settings(BaseSettings):
             return v
         return [str(v)]
 
-    # Model Configuration - AWS Lambda Local Model Loading
-    MODEL_NAME: str = "msmaje/Quantizedphdhatamodel"
-    USE_HF_INFERENCE_API: bool = False  # Load model locally on AWS Lambda (3008MB RAM available)
-    MODEL_CACHE_DIR: str = "/tmp/model_cache"  # AWS Lambda writable directory
-    USE_DYNAMIC_QUANTIZATION: bool = True  # Use INT8 quantization for memory efficiency
+    # -------------------------------------------------------
+    # Model Configuration
+    # -------------------------------------------------------
+    # USE_HF_INFERENCE_API:
+    #   true  → Call HuggingFace Inference API remotely (ideal for Render free tier)
+    #   false → Load model locally with PyTorch (ideal for local dev / Lambda / GPU servers)
+    # -------------------------------------------------------
+    MODEL_NAME: str = "msmaje/phdhatamodel"
+    USE_HF_INFERENCE_API: bool = True
+    HF_API_ENDPOINT: str = "https://api-inference.huggingface.co/models/msmaje/phdhatamodel"
+    INFERENCE_API_TIMEOUT: int = 30
+    
+    # Local model settings (used when USE_HF_INFERENCE_API=false)
+    MODEL_CACHE_DIR: str = "./model_cache"
+    LOCAL_MODEL_PATH: str = ""  # Path to local model dir (e.g. ../phdhatamodel)
+    USE_DYNAMIC_QUANTIZATION: bool = False
     MAX_SEQUENCE_LENGTH: int = 512
     BATCH_SIZE: int = 8
-    USE_HALF_PRECISION: bool = False  # Quantized model already optimized
+    USE_HALF_PRECISION: bool = False
 
     # ONNX Configuration (optional optimization)
     ONNX_FILE: str = "model_quantized.onnx"
@@ -70,12 +82,12 @@ class Settings(BaseSettings):
         1: "AI-generated"
     }
     
-    # Explainability - Optimized for AWS Lambda
-    LIME_NUM_SAMPLES: int = 100  # Reduced from 1000 to 100 for 24x speed improvement
+    # Explainability
+    LIME_NUM_SAMPLES: int = 100
     LIME_NUM_FEATURES: int = 10
 
-    # HF Hub - Token for downloading model from HuggingFace Hub
-    HF_TOKEN: Optional[str] = None  # Required for downloading private/gated models
+    # HF Hub Token — required for HF Inference API and downloading private models
+    HF_TOKEN: Optional[str] = None
     
     # Logging
     LOG_LEVEL: str = "INFO"
@@ -88,4 +100,3 @@ class Settings(BaseSettings):
 
 # Create settings instance
 settings = Settings()
-

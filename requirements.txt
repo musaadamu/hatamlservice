@@ -3,15 +3,14 @@ fastapi>=0.100.0
 uvicorn[standard]
 python-multipart
 
-# AWS Lambda Adapter
-mangum>=0.17.0
-
-# HTTP Client (for API communication)
+# HTTP Client (for HF Inference API and general communication)
 httpx>=0.26.0
 aiohttp>=3.9.0
 requests>=2.31.0
 
-# Machine Learning - PyTorch and Transformers for local model inference
+# Machine Learning - PyTorch and Transformers
+# Required for local inference mode (USE_HF_INFERENCE_API=false)
+# On Render free tier, these are still needed for LIME explainability
 torch>=2.0.0
 transformers>=4.30.0
 
@@ -31,7 +30,5 @@ fastapi-cors
 # Explainability (LIME for PhD research)
 lime>=0.2.0.1
 
-# NOTE: AWS Lambda Configuration
-# - Memory: 3008 MB (sufficient for quantized model + PyTorch)
-# - Timeout: 300 seconds (5 minutes for LIME processing)
-# - Model loads directly from HuggingFace Hub into /tmp/model_cache
+# NOTE: For AWS Lambda deployment, uncomment:
+# mangum>=0.17.0

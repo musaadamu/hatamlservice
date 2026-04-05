@@ -1,16 +1,23 @@
 # ============================================
-# HATA ML Service - AWS Lambda Container Image
-# Optimized for local model inference with PyTorch
+# HATA ML Service - Render Deployment
+# Optimized for Render free/paid tier
 # ============================================
-# Base image: AWS Lambda Python 3.11 runtime
-FROM public.ecr.aws/lambda/python:3.11
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for Docker layer caching
 COPY requirements.txt .
 
-# Install dependencies (no cache to reduce image size)
-# PyTorch and Transformers will be installed here
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY config.py .
@@ -18,18 +25,18 @@ COPY main.py .
 COPY app.py .
 COPY services/ ./services/
 
-# Copy .env file for default config (Lambda env vars will override)
-COPY .env.lambda .env
+# Copy environment file
+COPY .env .env
 
-# Create /tmp directories for Lambda (only /tmp is writable)
-# /tmp/logs - for application logs
-# /tmp/model_cache - for HuggingFace model cache
-RUN mkdir -p /tmp/logs /tmp/model_cache
+# Create logs directory
+RUN mkdir -p logs
 
-# Set HuggingFace cache directory to /tmp (Lambda writable directory)
-ENV HF_HOME=/tmp/model_cache
-ENV TRANSFORMERS_CACHE=/tmp/model_cache
+# Expose port
+EXPOSE 5000
 
-# Lambda handler entry point
-# Mangum wraps FastAPI's ASGI app for Lambda's event-driven invocation
-CMD ["main.handler"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:5000/health')" || exit 1
+
+# Start with uvicorn
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5000"]

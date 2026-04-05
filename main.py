@@ -1,7 +1,7 @@
 """
 HATA ML Service - FastAPI Application
 Main entry point for the ML microservice
-Supports both local (uvicorn) and AWS Lambda (Mangum) deployment
+Supports Render deployment (default) and local development
 """
 
 import os
@@ -9,7 +9,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from mangum import Mangum
 from loguru import logger
 import sys
 import time
@@ -24,13 +23,12 @@ from services.bias_service import BiasDetectionService
 logger.remove()
 logger.add(sys.stdout, level=settings.LOG_LEVEL)
 
-# Only add file logging when NOT running on Lambda (Lambda has read-only filesystem except /tmp)
-IS_LAMBDA = bool(os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
-if not IS_LAMBDA:
+# File logging (only when logs directory is writable)
+try:
+    os.makedirs("logs", exist_ok=True)
     logger.add("logs/ml_service.log", rotation="500 MB", level=settings.LOG_LEVEL)
-else:
-    logger.add("/tmp/ml_service.log", rotation="10 MB", level=settings.LOG_LEVEL)
-    logger.info("Running on AWS Lambda — file logs go to /tmp/")
+except OSError:
+    logger.info("File logging disabled (directory not writable)")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -103,14 +101,13 @@ async def root():
         "service": settings.API_TITLE,
         "version": settings.API_VERSION,
         "status": "running",
-        "runtime": "aws_lambda" if IS_LAMBDA else "local"
+        "inference_mode": "huggingface_api" if settings.USE_HF_INFERENCE_API else "local"
     }
 
 
 @app.get("/ping")
 async def ping():
-    """Keep-warm endpoint for Lambda scheduled events (CloudWatch).
-    Call this every 5 minutes to avoid cold starts."""
+    """Health ping endpoint"""
     return {"status": "warm", "timestamp": time.time()}
 
 
@@ -119,11 +116,10 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "inference_type": "huggingface_api" if settings.USE_HF_INFERENCE_API else "local",
-        "api_endpoint": settings.HF_API_ENDPOINT,
-        "supported_languages": settings.SUPPORTED_LANGUAGES,
+        "inference_mode": "huggingface_api" if settings.USE_HF_INFERENCE_API else "local",
         "model_name": settings.MODEL_NAME,
-        "runtime": "aws_lambda" if IS_LAMBDA else "local"
+        "api_endpoint": settings.HF_API_ENDPOINT if settings.USE_HF_INFERENCE_API else None,
+        "supported_languages": settings.SUPPORTED_LANGUAGES,
     }
 
 
@@ -182,7 +178,6 @@ async def predict(request: PredictionRequest):
         }
 
         logger.info(f"Prediction completed in {processing_time:.4f}s")
-        logger.info(f"Returning sanitized response: {response}")
         return response
         
     except Exception as e:
@@ -194,12 +189,6 @@ async def predict(request: PredictionRequest):
 async def batch_predict(request: BatchPredictionRequest):
     """
     Make predictions on multiple texts
-    
-    Args:
-        request: BatchPredictionRequest with texts and languages
-        
-    Returns:
-        List of prediction results
     """
     try:
         if len(request.texts) != len(request.languages):
@@ -216,8 +205,12 @@ async def batch_predict(request: BatchPredictionRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# AWS Lambda handler — Mangum adapts FastAPI's ASGI to Lambda's event interface
-handler = Mangum(app)
+# -------------------------------------------------------
+# AWS Lambda handler (uncomment when deploying to Lambda)
+# -------------------------------------------------------
+# from mangum import Mangum
+# handler = Mangum(app)
+# -------------------------------------------------------
 
 
 if __name__ == "__main__":
@@ -229,4 +222,3 @@ if __name__ == "__main__":
         reload=settings.RELOAD,
         workers=settings.WORKERS
     )
-

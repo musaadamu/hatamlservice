@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: hatamlservice  # Keeps your existing service name
+    name: hatamlservice
     runtime: python
     pythonVersion: 3.11.8
     plan: free
@@ -21,5 +21,13 @@ services:
         value: 10
       - key: PYTHON_VERSION
         value: 3.11.8
+      - key: MODEL_NAME
+        value: msmaje/phdhatamodel
+      - key: USE_HF_INFERENCE_API
+        value: true
+      - key: HF_API_ENDPOINT
+        value: https://api-inference.huggingface.co/models/msmaje/phdhatamodel
+      - key: INFERENCE_API_TIMEOUT
+        value: 30
       - key: HF_TOKEN
         sync: false
